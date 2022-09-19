@@ -1,0 +1,19 @@
+# Local .terraform directories
+demoappbyaman/.terraform/*
+
+# .tfstate files
+demoappbyaman/*.tfstate
+demoappbyaman/*.tfstate.*
+
+# Exclude all .tfvars files
+demoappbyaman/*.tfvars
+
+# Ignore override files
+demoappbyaman/override.tf
+demoappbyaman/override.tf.json
+demoappbyaman/*_override.tf
+demoappbyaman/*_override.tf.json
+
+# Ignore CLI configuration files
+demoappbyaman/.terraformrc
+demoappbyaman/terraform.rc
