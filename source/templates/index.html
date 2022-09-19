@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8" />
+    <title>House</title>
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
+      integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7"
+      crossorigin="anonymous"
+    />
+  <style>
+  #myH1tag {
+  	background-color:#339933;
+  	border: 1px solid black;
+  	border-radius:10px;
+  	padding:10px;
+	color: white;
+  }
+  #myPtag {
+        background-color:tomato;
+        border: 1px solid black;
+        border-radius:10px;
+        padding:10px;
+        color: white;
+  }
+  </style>
+  </head>
+  <body>
+    <div class="container">
+	    <h1 id="myH1tag">CATALOG</h1>
+	    	<p id="myPtag">{{ checkout }}</p>
+	    <h1 id="myH1tag">AD SERVICE</h1>
+            	<p id="myPtag">{{ ad }}</p>
+	    <h1 id="myH1tag">RECOMMEND</h1>
+            	<p id="myPtag">{{ recommend }}</p>
+	    <h1 id="myH1tag">PRODUCTCATALOG</h1>
+            	<p id="myPtag">{{ productcatalog }}</p>
+	    <h1 id="myH1tag">CARTS</h1>
+            	<p id="myPtag">{{ carts }}</p>
+	    <h1 id="myH1tag">SHIPPING</h1>
+            	<p id="myPtag">{{ shipping }}</p>
+	    <h1 id="myH1tag">CURRENCY</h1>
+            	<p id="myPtag">{{ currency }}</p>
+    </div>
+  </body>
+</html>

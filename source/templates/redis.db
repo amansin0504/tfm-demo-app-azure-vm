@@ -1,0 +1,4 @@
+{
+	service: "redis",
+	value: "db"
+}
