@@ -1,48 +1,53 @@
 output "access-frontend-at" {
-    value = join(":",list(aws_instance.frontend.public_ip,"8080"))
+    value = join(":",list(azurerm_linux_virtual_machine.frontend.public_ip_address,"8080"))
     description = "The instance name for the fronend instance"
 }
 output "frontend" {
-    value = aws_instance.frontend.private_ip
-    description = "The instance name for the fronend instance"
+    value = azurerm_linux_virtual_machine.frontend.private_ip_address
+    description = "The instance IP for the frontend"
 }
 output "checkout" {
-    value = aws_instance.checkout.private_ip
-    description = "The instance name for the checkout instance"
+    value = azurerm_linux_virtual_machine.checkout.private_ip_address
+    description = "The instance IP for the checkout"
 }
 output "ad" {
-    value = aws_instance.ad.private_ip
-    description = "The instance name for the ad instance"
+    value = azurerm_linux_virtual_machine.ad.private_ip_address
+    description = "The instance IP for the ad"
 }
 output "recommendation" {
-    value = aws_instance.recommendation.private_ip
-    description = "The instance name for the recommendation instance"
+    value = azurerm_linux_virtual_machine.recommendation.private_ip_address
+    description = "The instance IP for the recommendation"
 }
 output "payment" {
-    value = aws_instance.payment.private_ip
+    value = azurerm_linux_virtual_machine.payment.private_ip_address
     description = "The instance name for the payment instance"
 }
 output "emails" {
-    value = aws_instance.emails.private_ip
+    value = azurerm_linux_virtual_machine.email.private_ip_address
     description = "The instance name for the emails instance"
 }
 output "productcatalog" {
-    value = aws_instance.productcatalog.private_ip
+    value = azurerm_linux_virtual_machine.productcatalog.private_ip_address
     description = "The instance name for the productcatalog instance"
 }
 output "shipping" {
-    value = aws_instance.shipping.private_ip
+    value = azurerm_linux_virtual_machine.shipping.private_ip_address
     description = "The instance name for the shipping instance"
 }
 output "currency" {
-    value = aws_instance.currency.private_ip
+    value = azurerm_linux_virtual_machine.currency.private_ip_address
     description = "The instance name for the currency instance"
 }
-output "carts" {
-    value = aws_instance.carts.private_ip
+output "cart" {
+    value = azurerm_linux_virtual_machine.cart.private_ip_address
     description = "The instance name for the carts instance"
 }
 output "redis" {
-    value = aws_instance.redis.private_ip
+    value = azurerm_linux_virtual_machine.redis.private_ip_address
     description = "The instance name for the redis instance"
+}
+
+output "vm_ssh" {
+    value = tls_private_key.vm_ssh.private_key_pem
+    sensitive = true
 }

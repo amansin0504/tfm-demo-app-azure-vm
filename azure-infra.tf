@@ -1,581 +1,700 @@
-#Create VPC network (if you change cidr block make sure you update resolver in nginx conf file)
-resource "aws_vpc" "safe-vpc-network" {
-  cidr_block    = "10.0.0.0/16"
-  tags = {
-    Name = "microservices-ec2-vpc"
-  }
-}
-resource "aws_flow_log" "cswflowlogs" {
-  log_destination      = var.csws3arn
-  log_destination_type = "s3"
-  traffic_type         = "ALL"
-  vpc_id               = aws_vpc.safe-vpc-network.id
-  log_format = "$${account-id} $${action} $${bytes} $${dstaddr} $${dstport} $${end} $${instance-id} $${interface-id} $${log-status} $${packets} $${pkt-dstaddr} $${pkt-srcaddr} $${protocol} $${srcaddr} $${srcport} $${start} $${subnet-id} $${tcp-flags} $${type} $${version} $${vpc-id} $${flow-direction}"
+#Create Azure Resource Group
+resource "azurerm_resource_group" "microservicesdemorg" {
+    name     = "MicroservicesDemoRG"
+    location = var.location.value
 }
 
-#Create subnets in VPC network
-resource "aws_subnet" "websubnet1" {
-  vpc_id            = aws_vpc.safe-vpc-network.id
-  availability_zone = var.az1
-  cidr_block        = "10.0.1.0/24"
+#Create subnets in VNET network (if you change cidr block make sure you update resolver in nginx conf file)
+resource "azurerm_virtual_network" "demovnet" {
+    name                = "demovnet"
+    address_space       = ["10.0.0.0/16"]
+    location            = var.location.value
+    resource_group_name = azurerm_resource_group.microservicesdemorg.name
 }
-resource "aws_subnet" "websubnet2" {
-  vpc_id            = aws_vpc.safe-vpc-network.id
-  availability_zone = var.az2
-  cidr_block        = "10.0.2.0/24"
+resource "azurerm_subnet" "websubnet1" {
+    name                 = "websubnet1"
+    resource_group_name  = azurerm_resource_group.microservicesdemorg.name
+    virtual_network_name = azurerm_virtual_network.demovnet.name
+    address_prefixes       = ["10.0.1.0/24"]
 }
-
-resource "aws_subnet" "appsubnet1" {
-  vpc_id            = aws_vpc.safe-vpc-network.id
-  availability_zone = var.az1
-  cidr_block        = "10.0.3.0/24"
+resource "azurerm_subnet" "websubnet2" {
+    name                 = "websubnet2"
+    resource_group_name  = azurerm_resource_group.microservicesdemorg.name
+    virtual_network_name = azurerm_virtual_network.demovnet.name
+    address_prefixes       = ["10.0.2.0/24"]
 }
-resource "aws_subnet" "appsubnet2" {
-  vpc_id            = aws_vpc.safe-vpc-network.id
-  availability_zone = var.az2
-  cidr_block        = "10.0.4.0/24"
+resource "azurerm_subnet" "appsubnet1" {
+    name                 = "appsubnet1"
+    resource_group_name  = azurerm_resource_group.microservicesdemorg.name
+    virtual_network_name = azurerm_virtual_network.demovnet.name
+    address_prefixes       = ["10.0.3.0/24"]
 }
-
-resource "aws_subnet" "dbsubnet1" {
-  vpc_id            = aws_vpc.safe-vpc-network.id
-  availability_zone = var.az1
-  cidr_block        = "10.0.5.0/24"
+resource "azurerm_subnet" "appsubnet2" {
+    name                 = "appsubnet2"
+    resource_group_name  = azurerm_resource_group.microservicesdemorg.name
+    virtual_network_name = azurerm_virtual_network.demovnet.name
+    address_prefixes       = ["10.0.4.0/24"]
 }
-resource "aws_subnet" "dbsubnet2" {
-  vpc_id            = aws_vpc.safe-vpc-network.id
-  availability_zone = var.az2
-  cidr_block        = "10.0.6.0/24"
+resource "azurerm_subnet" "dbsubnet1" {
+    name                 = "dbsubnet1"
+    resource_group_name  = azurerm_resource_group.microservicesdemorg.name
+    virtual_network_name = azurerm_virtual_network.demovnet.name
+    address_prefixes       = ["10.0.5.0/24"]
 }
-
-#Create internet gateway
-resource "aws_internet_gateway" "internetgateway" {
-  vpc_id = aws_vpc.safe-vpc-network.id
-  tags = {
-    Name = "SafeIGW"
-  }
-}
-
-#Create Nat gateway
-resource "aws_eip" "nateip1" {
-  vpc = true
-}
-resource "aws_nat_gateway" "natgateway1" {
-  allocation_id = aws_eip.nateip1.id
-  subnet_id     = aws_subnet.websubnet1.id
-  tags = {
-    Name = "safeNATGW"
-  }
-  depends_on = [aws_internet_gateway.internetgateway]
-}
-resource "aws_eip" "nateip2" {
-  vpc = true
-}
-resource "aws_nat_gateway" "natgateway2" {
-  allocation_id = aws_eip.nateip2.id
-  subnet_id     = aws_subnet.websubnet2.id
-  tags = {
-    Name = "safeNATGW"
-  }
-  depends_on = [aws_internet_gateway.internetgateway]
+resource "azurerm_subnet" "dbsubnet2" {
+    name                 = "dbsubnet2"
+    resource_group_name  = azurerm_resource_group.microservicesdemorg.name
+    virtual_network_name = azurerm_virtual_network.demovnet.name
+    address_prefixes       = ["10.0.6.0/24"]
 }
 
-#Route tables
-resource "aws_route_table" "webRT" {
-  vpc_id = aws_vpc.safe-vpc-network.id
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.internetgateway.id
-  }
-  tags = {
-    Name = "webRT"
-  }
-}
-resource "aws_route_table_association" "webRTtowebsubnet1" {
-  subnet_id      = aws_subnet.websubnet1.id
-  route_table_id = aws_route_table.webRT.id
-}
-resource "aws_route_table_association" "webRTtowebsubnet2" {
-  subnet_id      = aws_subnet.websubnet2.id
-  route_table_id = aws_route_table.webRT.id
+# Create an SSH key
+resource "tls_private_key" "vm_ssh" {
+  algorithm = "RSA"
+  rsa_bits = 4096
 }
 
-resource "aws_route_table" "appRT1" {
-  vpc_id = aws_vpc.safe-vpc-network.id
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.natgateway1.id
-  }
-  tags = {
-    Name = "appRT1"
-  }
-}
-resource "aws_route_table_association" "appRT1toappsubnet1" {
-  subnet_id      = aws_subnet.appsubnet1.id
-  route_table_id = aws_route_table.appRT1.id
+# Create Network Security Group and rule
+resource "azurerm_network_security_group" "cswdemonsg" {
+    name                = "cswdemonsg"
+    location            = var.location.value
+    resource_group_name = azurerm_resource_group.microservicesdemorg.name
+
+    security_rule {
+        name                       = "AllInbound"
+        priority                   = 1001
+        direction                  = "Inbound"
+        access                     = "Allow"
+        protocol                   = "*"
+        source_port_range          = "*"
+        destination_port_range     = "*"
+        source_address_prefix      = "*"
+        destination_address_prefix = "*"
+    }
+    security_rule {
+        name                       = "AllOutbound"
+        priority                   = 1002
+        direction                  = "Outbound"
+        access                     = "Allow"
+        protocol                   = "*"
+        source_port_range          = "*"
+        destination_port_range     = "*"
+        source_address_prefix      = "*"
+        destination_address_prefix = "*"
+    }
 }
 
-resource "aws_route_table" "appRT2" {
-  vpc_id = aws_vpc.safe-vpc-network.id
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.natgateway2.id
-  }
-  tags = {
-    Name = "appRT2"
-  }
-}
-resource "aws_route_table_association" "appRT2toappsubnet2" {
-  subnet_id      = aws_subnet.appsubnet2.id
-  route_table_id = aws_route_table.appRT2.id
+# Create Network watcher - this is required if NW is not present, will also need ngs update below with watcher name and rg
+#resource "azurerm_network_watcher" "cswwatcher" {
+#  name                = "cswwatcher"
+#  location            = azurerm_resource_group.microservicesdemorg.location
+#  resource_group_name = azurerm_resource_group.microservicesdemorg.name
+#}
+
+# Create storage account
+resource "azurerm_storage_account" "amansin3cswflowstorage" {
+  name                = "amansin3cswflowstorage"
+  resource_group_name = azurerm_resource_group.microservicesdemorg.name
+  location            = azurerm_resource_group.microservicesdemorg.location
+
+  account_tier              = "Standard"
+  account_kind              = "StorageV2"
+  account_replication_type  = "LRS"
+  enable_https_traffic_only = true
 }
 
-resource "aws_route_table" "dbRT1" {
-  vpc_id = aws_vpc.safe-vpc-network.id
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.natgateway1.id
-  }
-  tags = {
-    Name = "dbRT1"
-  }
-}
-resource "aws_route_table_association" "dbRT1todbsubnet1" {
-  subnet_id      = aws_subnet.dbsubnet1.id
-  route_table_id = aws_route_table.dbRT1.id
-}
+# Configure nsg to user network watcher and store logs in storage account
+resource "azurerm_network_watcher_flow_log" "cswnsgflowwatcher" {
+  network_watcher_name = var.watchername.value
+  resource_group_name  = var.watcherrg.value
+  name                 = "csw-log"
 
-resource "aws_route_table" "dbRT2" {
-  vpc_id = aws_vpc.safe-vpc-network.id
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.natgateway2.id
-  }
-  tags = {
-    Name = "dbRT2"
-  }
-}
-resource "aws_route_table_association" "dbRT2todbsubnet2" {
-  subnet_id      = aws_subnet.dbsubnet2.id
-  route_table_id = aws_route_table.dbRT2.id
-}
+  network_security_group_id = azurerm_network_security_group.cswdemonsg.id
+  storage_account_id        = azurerm_storage_account.amansin3cswflowstorage.id
+  enabled                   = true
 
-resource "aws_security_group" "allow_safe_access" {
-  name        = "allow_safe_access"
-  description = "Allow inbound traffic"
-  vpc_id      = aws_vpc.safe-vpc-network.id
-
-  ingress {
-    description      = "all access"
-    from_port        = 0
-    to_port          = 0
-    protocol         = -1
-    cidr_blocks      = ["0.0.0.0/0"]
-  }
-  egress {
-    description      = "all access"
-    from_port        = 0
-    to_port          = 0
-    protocol         = -1
-    cidr_blocks      = ["0.0.0.0/0"]
-  }
-  tags = {
-    Name = "allow_all_access"
+  retention_policy {
+    enabled = true
+    days    = 15
   }
 }
 
-#Create Frontend Server
+# Create virtual machines for Front-end
+resource "azurerm_public_ip" "frontendPublicIP" {
+    name                         = "frontendPublicIP"
+    location                     = var.location.value
+    resource_group_name          = azurerm_resource_group.microservicesdemorg.name
+    allocation_method            = "Dynamic"
+}
+
+resource "azurerm_network_interface" "frontendnic" {
+    name                      = "frontendnic"
+    location                  = var.location.value
+    resource_group_name       = azurerm_resource_group.microservicesdemorg.name
+    internal_dns_name_label       = "frontend"
+
+    ip_configuration {
+        name                          = "myfrontendconfiguration"
+        subnet_id                     = azurerm_subnet.websubnet1.id
+        private_ip_address_allocation = "Static"
+        private_ip_address            = "10.0.1.10"
+        public_ip_address_id          = azurerm_public_ip.frontendPublicIP.id
+    }
+}
+resource "azurerm_network_interface_security_group_association" "frontendnic" {
+    network_interface_id      = azurerm_network_interface.frontendnic.id
+    network_security_group_id = azurerm_network_security_group.cswdemonsg.id
+}
 data "template_file" "frontendinit" {
-  template = file("scripts/frontend.sh")
+  template = file("./scripts/frontend.sh")
 }
-data "template_cloudinit_config" "frontendconfig" {
-  gzip          = true
-  base64_encode = true
-  part {
-    filename     = "appconfig.cfg"
-    content_type = "text/x-shellscript"
-    content      = data.template_file.frontendinit.rendered
-  }
-}
-resource "aws_network_interface" "frontend" {
-  subnet_id   = aws_subnet.websubnet1.id
-  private_ips = ["10.0.1.10"]
-  security_groups   = [aws_security_group.allow_safe_access.id]
-  tags = {
-    Name = "frontend"
-  }
-}
-resource "aws_instance" "frontend" {
-   instance_type = "t2.micro"
-   ami = var.images[var.region]
-   user_data_base64  = data.template_cloudinit_config.frontendconfig.rendered
-   network_interface {
-    network_interface_id = aws_network_interface.frontend.id
-    device_index         = 0
-  }
-  key_name = var.keyname
-  tags = {
-    Name = "frontend"
-  }
-}
-resource "aws_eip" "frontendeip" {
-  depends_on = [aws_internet_gateway.internetgateway]
-  instance = aws_instance.frontend.id
-  vpc      = true
-}
-resource "aws_eip_association" "frontendeipassociation" {
-  instance_id   = aws_instance.frontend.id
-  allocation_id = aws_eip.frontendeip.id
-}
+resource "azurerm_linux_virtual_machine" "frontend" {
+    name                  = "frontend"
+    location              = var.location.value
+    resource_group_name   = azurerm_resource_group.microservicesdemorg.name
+    network_interface_ids = [azurerm_network_interface.frontendnic.id]
+    size                  = "Standard_DS3_v2"
 
+    os_disk {
+        name              = "frontenddisk"
+        caching           = "ReadWrite"
+        storage_account_type = "Premium_LRS"
+    }
+
+    source_image_reference {
+        publisher = "Canonical"
+        offer     = "0001-com-ubuntu-server-focal"
+        sku       = "20_04-lts-gen2"
+        version   = "latest"
+    }
+
+    computer_name  = "frontend"
+    admin_username = "azureuser"
+    disable_password_authentication = true
+    custom_data = base64encode(data.template_file.frontendinit.rendered)
+
+    admin_ssh_key {
+        username       = "azureuser"
+        public_key     = tls_private_key.vm_ssh.public_key_openssh
+    }
+}
 
 #Create checkout Server
+resource "azurerm_network_interface" "checkoutnic" {
+    name                      = "checkoutnic"
+    location                  = var.location.value
+    resource_group_name       = azurerm_resource_group.microservicesdemorg.name
+    internal_dns_name_label       = "checkout"
+
+    ip_configuration {
+        name                          = "checkoutconfiguration"
+        subnet_id                     = azurerm_subnet.appsubnet1.id
+        private_ip_address_allocation = "Static"
+        private_ip_address            = "10.0.3.10"
+    }
+}
+resource "azurerm_network_interface_security_group_association" "checkoutnic" {
+    network_interface_id      = azurerm_network_interface.checkoutnic.id
+    network_security_group_id = azurerm_network_security_group.cswdemonsg.id
+}
 data "template_file" "checkoutinit" {
-  template = file("scripts/checkout.sh")
+  template = file("./scripts/checkout.sh")
 }
-data "template_cloudinit_config" "checkoutconfig" {
-  gzip          = true
-  base64_encode = true
-  part {
-    filename     = "appconfig.cfg"
-    content_type = "text/x-shellscript"
-    content      = data.template_file.checkoutinit.rendered
-  }
-}
-resource "aws_network_interface" "checkout" {
-  subnet_id   = aws_subnet.appsubnet1.id
-  private_ips = ["10.0.3.10"]
-  security_groups   = [aws_security_group.allow_safe_access.id]
-  tags = {
-    Name = "checkout"
-  }
-}
-resource "aws_instance" "checkout" {
-   instance_type = "t2.micro"
-   ami = var.images[var.region]
-   user_data_base64  = data.template_cloudinit_config.checkoutconfig.rendered
-   depends_on = [aws_nat_gateway.natgateway1,aws_nat_gateway.natgateway2]
-   network_interface {
-    network_interface_id = aws_network_interface.checkout.id
-    device_index         = 0
-  }
-  key_name = var.keyname
-  tags = {
-    Name = "checkout"
-  }
+resource "azurerm_linux_virtual_machine" "checkout" {
+    name                  = "checkout"
+    location              = var.location.value
+    resource_group_name   = azurerm_resource_group.microservicesdemorg.name
+    network_interface_ids = [azurerm_network_interface.checkoutnic.id]
+    size                  = "Standard_DS3_v2"
+
+    os_disk {
+        name              = "checkoutdisk"
+        caching           = "ReadWrite"
+        storage_account_type = "Premium_LRS"
+    }
+
+    source_image_reference {
+        publisher = "Canonical"
+        offer     = "0001-com-ubuntu-server-focal"
+        sku       = "20_04-lts-gen2"
+        version   = "latest"
+    }
+
+    computer_name  = "checkout"
+    admin_username = "azureuser"
+    disable_password_authentication = true
+    custom_data = base64encode(data.template_file.checkoutinit.rendered)
+
+    admin_ssh_key {
+        username       = "azureuser"
+        public_key     = tls_private_key.vm_ssh.public_key_openssh
+    }
 }
 
 #Create ad Server
+resource "azurerm_network_interface" "adnic" {
+    name                      = "adnic"
+    location                  = var.location.value
+    resource_group_name       = azurerm_resource_group.microservicesdemorg.name
+    internal_dns_name_label       = "ad"
+
+    ip_configuration {
+        name                          = "adconfiguration"
+        subnet_id                     = azurerm_subnet.appsubnet1.id
+        private_ip_address_allocation = "Static"
+        private_ip_address            = "10.0.3.11"
+    }
+}
+resource "azurerm_network_interface_security_group_association" "adnic" {
+    network_interface_id      = azurerm_network_interface.adnic.id
+    network_security_group_id = azurerm_network_security_group.cswdemonsg.id
+}
 data "template_file" "adinit" {
-  template = file("scripts/ad.sh")
+  template = file("./scripts/ad.sh")
 }
-data "template_cloudinit_config" "adconfig" {
-  gzip          = true
-  base64_encode = true
-  part {
-    filename     = "appconfig.cfg"
-    content_type = "text/x-shellscript"
-    content      = data.template_file.adinit.rendered
-  }
+resource "azurerm_linux_virtual_machine" "ad" {
+    name                  = "ad"
+    location              = var.location.value
+    resource_group_name   = azurerm_resource_group.microservicesdemorg.name
+    network_interface_ids = [azurerm_network_interface.adnic.id]
+    size                  = "Standard_DS3_v2"
+
+    os_disk {
+        name              = "addisk"
+        caching           = "ReadWrite"
+        storage_account_type = "Premium_LRS"
+    }
+
+    source_image_reference {
+        publisher = "Canonical"
+        offer     = "0001-com-ubuntu-server-focal"
+        sku       = "20_04-lts-gen2"
+        version   = "latest"
+    }
+
+    computer_name  = "ad"
+    admin_username = "azureuser"
+    disable_password_authentication = true
+    custom_data = base64encode(data.template_file.adinit.rendered)
+
+    admin_ssh_key {
+        username       = "azureuser"
+        public_key     = tls_private_key.vm_ssh.public_key_openssh
+    }
 }
-resource "aws_network_interface" "ad" {
-  subnet_id   = aws_subnet.appsubnet1.id
-  private_ips = ["10.0.3.11"]
-  security_groups   = [aws_security_group.allow_safe_access.id]
-  tags = {
-    Name = "ad"
-  }
-}
-resource "aws_instance" "ad" {
-   instance_type = "t2.micro"
-   ami = var.images[var.region]
-   user_data_base64  = data.template_cloudinit_config.adconfig.rendered
-   depends_on = [aws_nat_gateway.natgateway1,aws_nat_gateway.natgateway2]
-   network_interface {
-    network_interface_id = aws_network_interface.ad.id
-    device_index         = 0
-  }
-  key_name = var.keyname
-  tags = {
-    Name = "ad"
-  }
-}
+
 #Create recommendation Server
+resource "azurerm_network_interface" "recommendationnic" {
+    name                      = "recommendationnic"
+    location                  = var.location.value
+    resource_group_name       = azurerm_resource_group.microservicesdemorg.name
+    internal_dns_name_label       = "recommendation"
+
+    ip_configuration {
+        name                          = "recommendationconfiguration"
+        subnet_id                     = azurerm_subnet.appsubnet1.id
+        private_ip_address_allocation = "Static"
+        private_ip_address            = "10.0.3.12"
+    }
+}
+resource "azurerm_network_interface_security_group_association" "recommendationnic" {
+    network_interface_id      = azurerm_network_interface.recommendationnic.id
+    network_security_group_id = azurerm_network_security_group.cswdemonsg.id
+}
 data "template_file" "recommendationinit" {
-  template = file("scripts/recommendation.sh")
+  template = file("./scripts/recommendation.sh")
 }
-data "template_cloudinit_config" "recommendationconfig" {
-  gzip          = true
-  base64_encode = true
-  part {
-    filename     = "appconfig.cfg"
-    content_type = "text/x-shellscript"
-    content      = data.template_file.recommendationinit.rendered
-  }
+resource "azurerm_linux_virtual_machine" "recommendation" {
+    name                  = "recommendation"
+    location              = var.location.value
+    resource_group_name   = azurerm_resource_group.microservicesdemorg.name
+    network_interface_ids = [azurerm_network_interface.recommendationnic.id]
+    size                  = "Standard_DS3_v2"
+
+    os_disk {
+        name              = "recommendationdisk"
+        caching           = "ReadWrite"
+        storage_account_type = "Premium_LRS"
+    }
+
+    source_image_reference {
+        publisher = "Canonical"
+        offer     = "0001-com-ubuntu-server-focal"
+        sku       = "20_04-lts-gen2"
+        version   = "latest"
+    }
+
+    computer_name  = "recommendation"
+    admin_username = "azureuser"
+    disable_password_authentication = true
+    custom_data = base64encode(data.template_file.recommendationinit.rendered)
+
+    admin_ssh_key {
+        username       = "azureuser"
+        public_key     = tls_private_key.vm_ssh.public_key_openssh
+    }
 }
-resource "aws_network_interface" "recommendation" {
-  subnet_id   = aws_subnet.appsubnet1.id
-  private_ips = ["10.0.3.12"]
-  security_groups   = [aws_security_group.allow_safe_access.id]
-  tags = {
-    Name = "recommendation"
-  }
-}
-resource "aws_instance" "recommendation" {
-   instance_type = "t2.micro"
-   ami = var.images[var.region]
-   user_data_base64  = data.template_cloudinit_config.recommendationconfig.rendered
-   depends_on = [aws_nat_gateway.natgateway1,aws_nat_gateway.natgateway2]
-   network_interface {
-    network_interface_id = aws_network_interface.recommendation.id
-    device_index         = 0
-  }
-  key_name = var.keyname
-  tags = {
-    Name = "recommendation"
-  }
-}
+
 #Create payment Server
+resource "azurerm_network_interface" "paymentnic" {
+    name                      = "paymentnic"
+    location                  = var.location.value
+    resource_group_name       = azurerm_resource_group.microservicesdemorg.name
+    internal_dns_name_label       = "payment"
+
+    ip_configuration {
+        name                          = "paymentconfiguration"
+        subnet_id                     = azurerm_subnet.appsubnet1.id
+        private_ip_address_allocation = "Static"
+        private_ip_address            = "10.0.3.13"
+    }
+}
+resource "azurerm_network_interface_security_group_association" "paymentnic" {
+    network_interface_id      = azurerm_network_interface.paymentnic.id
+    network_security_group_id = azurerm_network_security_group.cswdemonsg.id
+}
 data "template_file" "paymentinit" {
-  template = file("scripts/payment.sh")
+  template = file("./scripts/payment.sh")
 }
-data "template_cloudinit_config" "paymentconfig" {
-  gzip          = true
-  base64_encode = true
-  part {
-    filename     = "appconfig.cfg"
-    content_type = "text/x-shellscript"
-    content      = data.template_file.paymentinit.rendered
-  }
+resource "azurerm_linux_virtual_machine" "payment" {
+    name                  = "payment"
+    location              = var.location.value
+    resource_group_name   = azurerm_resource_group.microservicesdemorg.name
+    network_interface_ids = [azurerm_network_interface.paymentnic.id]
+    size                  = "Standard_DS3_v2"
+
+    os_disk {
+        name              = "paymentdisk"
+        caching           = "ReadWrite"
+        storage_account_type = "Premium_LRS"
+    }
+
+    source_image_reference {
+        publisher = "Canonical"
+        offer     = "0001-com-ubuntu-server-focal"
+        sku       = "20_04-lts-gen2"
+        version   = "latest"
+    }
+
+    computer_name  = "payment"
+    admin_username = "azureuser"
+    disable_password_authentication = true
+    custom_data = base64encode(data.template_file.paymentinit.rendered)
+
+    admin_ssh_key {
+        username       = "azureuser"
+        public_key     = tls_private_key.vm_ssh.public_key_openssh
+    }
 }
-resource "aws_network_interface" "payment" {
-  subnet_id   = aws_subnet.appsubnet1.id
-  private_ips = ["10.0.3.13"]
-  security_groups   = [aws_security_group.allow_safe_access.id]
-  tags = {
-    Name = "payment"
-  }
+
+#Create email Server
+resource "azurerm_network_interface" "emailnic" {
+    name                      = "emailnic"
+    location                  = var.location.value
+    resource_group_name       = azurerm_resource_group.microservicesdemorg.name
+    internal_dns_name_label       = "email"
+
+    ip_configuration {
+        name                          = "emailconfiguration"
+        subnet_id                     = azurerm_subnet.appsubnet1.id
+        private_ip_address_allocation = "Static"
+        private_ip_address            = "10.0.3.14"
+    }
 }
-resource "aws_instance" "payment" {
-   instance_type = "t2.micro"
-   ami = var.images[var.region]
-   user_data_base64  = data.template_cloudinit_config.paymentconfig.rendered
-   depends_on = [aws_nat_gateway.natgateway1,aws_nat_gateway.natgateway2]
-   network_interface {
-    network_interface_id = aws_network_interface.payment.id
-    device_index         = 0
-  }
-  key_name = var.keyname
-  tags = {
-    Name = "payment"
-  }
+resource "azurerm_network_interface_security_group_association" "emailnic" {
+    network_interface_id      = azurerm_network_interface.emailnic.id
+    network_security_group_id = azurerm_network_security_group.cswdemonsg.id
 }
-#Create emails Server
-data "template_file" "emailsinit" {
-  template = file("scripts/emails.sh")
+data "template_file" "emailinit" {
+  template = file("./scripts/emails.sh")
 }
-data "template_cloudinit_config" "emailsconfig" {
-  gzip          = true
-  base64_encode = true
-  part {
-    filename     = "appconfig.cfg"
-    content_type = "text/x-shellscript"
-    content      = data.template_file.emailsinit.rendered
-  }
+resource "azurerm_linux_virtual_machine" "email" {
+    name                  = "email"
+    location              = var.location.value
+    resource_group_name   = azurerm_resource_group.microservicesdemorg.name
+    network_interface_ids = [azurerm_network_interface.emailnic.id]
+    size                  = "Standard_DS3_v2"
+
+    os_disk {
+        name              = "emaildisk"
+        caching           = "ReadWrite"
+        storage_account_type = "Premium_LRS"
+    }
+
+    source_image_reference {
+        publisher = "Canonical"
+        offer     = "0001-com-ubuntu-server-focal"
+        sku       = "20_04-lts-gen2"
+        version   = "latest"
+    }
+
+    computer_name  = "email"
+    admin_username = "azureuser"
+    disable_password_authentication = true
+    custom_data = base64encode(data.template_file.emailinit.rendered)
+
+    admin_ssh_key {
+        username       = "azureuser"
+        public_key     = tls_private_key.vm_ssh.public_key_openssh
+    }
 }
-resource "aws_network_interface" "emails" {
-  subnet_id   = aws_subnet.appsubnet1.id
-  private_ips = ["10.0.3.14"]
-  security_groups   = [aws_security_group.allow_safe_access.id]
-  tags = {
-    Name = "emails"
-  }
-}
-resource "aws_instance" "emails" {
-   instance_type = "t2.micro"
-   ami = var.images[var.region]
-   user_data_base64  = data.template_cloudinit_config.emailsconfig.rendered
-   depends_on = [aws_nat_gateway.natgateway1,aws_nat_gateway.natgateway2]
-   network_interface {
-    network_interface_id = aws_network_interface.emails.id
-    device_index         = 0
-  }
-  key_name = var.keyname
-  tags = {
-    Name = "emails"
-  }
-}
+
 #Create productcatalog Server
+resource "azurerm_network_interface" "productcatalognic" {
+    name                      = "productcatalognic"
+    location                  = var.location.value
+    resource_group_name       = azurerm_resource_group.microservicesdemorg.name
+    internal_dns_name_label       = "productcatalog"
+
+    ip_configuration {
+        name                          = "productcatalogconfiguration"
+        subnet_id                     = azurerm_subnet.appsubnet1.id
+        private_ip_address_allocation = "Static"
+        private_ip_address            = "10.0.3.15"
+    }
+}
+resource "azurerm_network_interface_security_group_association" "productcatalognic" {
+    network_interface_id      = azurerm_network_interface.productcatalognic.id
+    network_security_group_id = azurerm_network_security_group.cswdemonsg.id
+}
 data "template_file" "productcataloginit" {
-  template = file("scripts/productcatalog.sh")
+  template = file("./scripts/productcatalog.sh")
 }
-data "template_cloudinit_config" "productcatalogconfig" {
-  gzip          = true
-  base64_encode = true
-  part {
-    filename     = "appconfig.cfg"
-    content_type = "text/x-shellscript"
-    content      = data.template_file.productcataloginit.rendered
-  }
+resource "azurerm_linux_virtual_machine" "productcatalog" {
+    name                  = "productcatalog"
+    location              = var.location.value
+    resource_group_name   = azurerm_resource_group.microservicesdemorg.name
+    network_interface_ids = [azurerm_network_interface.productcatalognic.id]
+    size                  = "Standard_DS3_v2"
+
+    os_disk {
+        name              = "productcatalogdisk"
+        caching           = "ReadWrite"
+        storage_account_type = "Premium_LRS"
+    }
+
+    source_image_reference {
+        publisher = "Canonical"
+        offer     = "0001-com-ubuntu-server-focal"
+        sku       = "20_04-lts-gen2"
+        version   = "latest"
+    }
+
+    computer_name  = "productcatalog"
+    admin_username = "azureuser"
+    disable_password_authentication = true
+    custom_data = base64encode(data.template_file.productcataloginit.rendered)
+
+    admin_ssh_key {
+        username       = "azureuser"
+        public_key     = tls_private_key.vm_ssh.public_key_openssh
+    }
 }
-resource "aws_network_interface" "productcatalog" {
-  subnet_id   = aws_subnet.appsubnet1.id
-  private_ips = ["10.0.3.15"]
-  security_groups   = [aws_security_group.allow_safe_access.id]
-  tags = {
-    Name = "productcatalog"
-  }
-}
-resource "aws_instance" "productcatalog" {
-   instance_type = "t2.micro"
-   ami = var.images[var.region]
-   user_data_base64  = data.template_cloudinit_config.productcatalogconfig.rendered
-   depends_on = [aws_nat_gateway.natgateway1,aws_nat_gateway.natgateway2]
-   network_interface {
-    network_interface_id = aws_network_interface.productcatalog.id
-    device_index         = 0
-  }
-  key_name = var.keyname
-  tags = {
-    Name = "productcatalog"
-  }
-}
+
 #Create shipping Server
+resource "azurerm_network_interface" "shippingnic" {
+    name                      = "shippingnic"
+    location                  = var.location.value
+    resource_group_name       = azurerm_resource_group.microservicesdemorg.name
+    internal_dns_name_label       = "shipping"
+
+    ip_configuration {
+        name                          = "shippingconfiguration"
+        subnet_id                     = azurerm_subnet.appsubnet1.id
+        private_ip_address_allocation = "Static"
+        private_ip_address            = "10.0.3.16"
+    }
+}
+resource "azurerm_network_interface_security_group_association" "shippingnic" {
+    network_interface_id      = azurerm_network_interface.shippingnic.id
+    network_security_group_id = azurerm_network_security_group.cswdemonsg.id
+}
 data "template_file" "shippinginit" {
-  template = file("scripts/shipping.sh")
+  template = file("./scripts/shipping.sh")
 }
-data "template_cloudinit_config" "shippingconfig" {
-  gzip          = true
-  base64_encode = true
-  part {
-    filename     = "appconfig.cfg"
-    content_type = "text/x-shellscript"
-    content      = data.template_file.shippinginit.rendered
-  }
+resource "azurerm_linux_virtual_machine" "shipping" {
+    name                  = "shipping"
+    location              = var.location.value
+    resource_group_name   = azurerm_resource_group.microservicesdemorg.name
+    network_interface_ids = [azurerm_network_interface.shippingnic.id]
+    size                  = "Standard_DS3_v2"
+
+    os_disk {
+        name              = "shippingdisk"
+        caching           = "ReadWrite"
+        storage_account_type = "Premium_LRS"
+    }
+
+    source_image_reference {
+        publisher = "Canonical"
+        offer     = "0001-com-ubuntu-server-focal"
+        sku       = "20_04-lts-gen2"
+        version   = "latest"
+    }
+
+    computer_name  = "shipping"
+    admin_username = "azureuser"
+    disable_password_authentication = true
+    custom_data = base64encode(data.template_file.shippinginit.rendered)
+
+    admin_ssh_key {
+        username       = "azureuser"
+        public_key     = tls_private_key.vm_ssh.public_key_openssh
+    }
 }
-resource "aws_network_interface" "shipping" {
-  subnet_id   = aws_subnet.appsubnet1.id
-  private_ips = ["10.0.3.16"]
-  security_groups   = [aws_security_group.allow_safe_access.id]
-  tags = {
-    Name = "shipping"
-  }
-}
-resource "aws_instance" "shipping" {
-   instance_type = "t2.micro"
-   ami = var.images[var.region]
-   user_data_base64  = data.template_cloudinit_config.shippingconfig.rendered
-   depends_on = [aws_nat_gateway.natgateway1,aws_nat_gateway.natgateway2]
-   network_interface {
-    network_interface_id = aws_network_interface.shipping.id
-    device_index         = 0
-  }
-  key_name = var.keyname
-  tags = {
-    Name = "shipping"
-  }
-}
+
 #Create currency Server
+resource "azurerm_network_interface" "currencynic" {
+    name                      = "currencynic"
+    location                  = var.location.value
+    resource_group_name       = azurerm_resource_group.microservicesdemorg.name
+    internal_dns_name_label       = "currency"
+
+    ip_configuration {
+        name                          = "currencyconfiguration"
+        subnet_id                     = azurerm_subnet.appsubnet1.id
+        private_ip_address_allocation = "Static"
+        private_ip_address            = "10.0.3.17"
+    }
+}
+resource "azurerm_network_interface_security_group_association" "currencynic" {
+    network_interface_id      = azurerm_network_interface.currencynic.id
+    network_security_group_id = azurerm_network_security_group.cswdemonsg.id
+}
 data "template_file" "currencyinit" {
-  template = file("scripts/currency.sh")
+  template = file("./scripts/currency.sh")
 }
-data "template_cloudinit_config" "currencyconfig" {
-  gzip          = true
-  base64_encode = true
-  part {
-    filename     = "appconfig.cfg"
-    content_type = "text/x-shellscript"
-    content      = data.template_file.currencyinit.rendered
-  }
+resource "azurerm_linux_virtual_machine" "currency" {
+    name                  = "currency"
+    location              = var.location.value
+    resource_group_name   = azurerm_resource_group.microservicesdemorg.name
+    network_interface_ids = [azurerm_network_interface.currencynic.id]
+    size                  = "Standard_DS3_v2"
+
+    os_disk {
+        name              = "currencydisk"
+        caching           = "ReadWrite"
+        storage_account_type = "Premium_LRS"
+    }
+
+    source_image_reference {
+        publisher = "Canonical"
+        offer     = "0001-com-ubuntu-server-focal"
+        sku       = "20_04-lts-gen2"
+        version   = "latest"
+    }
+
+    computer_name  = "currency"
+    admin_username = "azureuser"
+    disable_password_authentication = true
+    custom_data = base64encode(data.template_file.currencyinit.rendered)
+
+    admin_ssh_key {
+        username       = "azureuser"
+        public_key     = tls_private_key.vm_ssh.public_key_openssh
+    }
 }
-resource "aws_network_interface" "currency" {
-  subnet_id   = aws_subnet.appsubnet1.id
-  private_ips = ["10.0.3.17"]
-  security_groups   = [aws_security_group.allow_safe_access.id]
-  tags = {
-    Name = "currency"
-  }
-}
-resource "aws_instance" "currency" {
-   instance_type = "t2.micro"
-   ami = var.images[var.region]
-   user_data_base64  = data.template_cloudinit_config.currencyconfig.rendered
-   depends_on = [aws_nat_gateway.natgateway1,aws_nat_gateway.natgateway2]
-   network_interface {
-    network_interface_id = aws_network_interface.currency.id
-    device_index         = 0
-  }
-  key_name = var.keyname
-  tags = {
-    Name = "currency"
-  }
-}
+
 #Create cart Server
+resource "azurerm_network_interface" "cartnic" {
+    name                      = "cartnic"
+    location                  = var.location.value
+    resource_group_name       = azurerm_resource_group.microservicesdemorg.name
+    internal_dns_name_label       = "cart"
+
+    ip_configuration {
+        name                          = "cartconfiguration"
+        subnet_id                     = azurerm_subnet.appsubnet1.id
+        private_ip_address_allocation = "Static"
+        private_ip_address            = "10.0.3.18"
+    }
+}
+resource "azurerm_network_interface_security_group_association" "cartnic" {
+    network_interface_id      = azurerm_network_interface.cartnic.id
+    network_security_group_id = azurerm_network_security_group.cswdemonsg.id
+}
 data "template_file" "cartinit" {
-  template = file("scripts/carts.sh")
+  template = file("./scripts/carts.sh")
 }
-data "template_cloudinit_config" "cartconfig" {
-  gzip          = true
-  base64_encode = true
-  part {
-    filename     = "appconfig.cfg"
-    content_type = "text/x-shellscript"
-    content      = data.template_file.cartinit.rendered
-  }
+resource "azurerm_linux_virtual_machine" "cart" {
+    name                  = "cart"
+    location              = var.location.value
+    resource_group_name   = azurerm_resource_group.microservicesdemorg.name
+    network_interface_ids = [azurerm_network_interface.cartnic.id]
+    size                  = "Standard_DS3_v2"
+
+    os_disk {
+        name              = "cartdisk"
+        caching           = "ReadWrite"
+        storage_account_type = "Premium_LRS"
+    }
+
+    source_image_reference {
+        publisher = "Canonical"
+        offer     = "0001-com-ubuntu-server-focal"
+        sku       = "20_04-lts-gen2"
+        version   = "latest"
+    }
+
+    computer_name  = "cart"
+    admin_username = "azureuser"
+    disable_password_authentication = true
+    custom_data = base64encode(data.template_file.cartinit.rendered)
+
+    admin_ssh_key {
+        username       = "azureuser"
+        public_key     = tls_private_key.vm_ssh.public_key_openssh
+    }
 }
-resource "aws_network_interface" "cart" {
-  subnet_id   = aws_subnet.appsubnet1.id
-  private_ips = ["10.0.3.18"]
-  security_groups   = [aws_security_group.allow_safe_access.id]
-  tags = {
-    Name = "cart"
-  }
-}
-resource "aws_instance" "carts" {
-   instance_type = "t2.micro"
-   ami = var.images[var.region]
-   user_data_base64  = data.template_cloudinit_config.cartconfig.rendered
-   depends_on = [aws_nat_gateway.natgateway1,aws_nat_gateway.natgateway2]
-   network_interface {
-    network_interface_id = aws_network_interface.cart.id
-    device_index         = 0
-  }
-  key_name = var.keyname
-  tags = {
-    Name = "cart"
-  }
-}
+
 #Create redis Server
+resource "azurerm_network_interface" "redisnic" {
+    name                      = "redisnic"
+    location                  = var.location.value
+    resource_group_name       = azurerm_resource_group.microservicesdemorg.name
+    internal_dns_name_label       = "redis"
+
+    ip_configuration {
+        name                          = "redisconfiguration"
+        subnet_id                     = azurerm_subnet.dbsubnet1.id
+        private_ip_address_allocation = "Static"
+        private_ip_address            = "10.0.5.10"
+    }
+}
+resource "azurerm_network_interface_security_group_association" "redisnic" {
+    network_interface_id      = azurerm_network_interface.redisnic.id
+    network_security_group_id = azurerm_network_security_group.cswdemonsg.id
+}
 data "template_file" "redisinit" {
-  template = file("scripts/redis.sh")
+  template = file("./scripts/redis.sh")
 }
-data "template_cloudinit_config" "redisconfig" {
-  gzip          = true
-  base64_encode = true
-  part {
-    filename     = "appconfig.cfg"
-    content_type = "text/x-shellscript"
-    content      = data.template_file.redisinit.rendered
-  }
-}
-resource "aws_network_interface" "redis" {
-  subnet_id   = aws_subnet.dbsubnet1.id
-  private_ips = ["10.0.5.10"]
-  security_groups   = [aws_security_group.allow_safe_access.id]
-  tags = {
-    Name = "redis"
-  }
-}
-resource "aws_instance" "redis" {
-   instance_type = "t2.micro"
-   ami = var.images[var.region]
-   user_data_base64  = data.template_cloudinit_config.redisconfig.rendered
-   depends_on = [aws_nat_gateway.natgateway1,aws_nat_gateway.natgateway2]
-   network_interface {
-    network_interface_id = aws_network_interface.redis.id
-    device_index         = 0
-  }
-  key_name = var.keyname
-  tags = {
-    Name = "redis"
-  }
+resource "azurerm_linux_virtual_machine" "redis" {
+    name                  = "redis"
+    location              = var.location.value
+    resource_group_name   = azurerm_resource_group.microservicesdemorg.name
+    network_interface_ids = [azurerm_network_interface.redisnic.id]
+    size                  = "Standard_DS3_v2"
+
+    os_disk {
+        name              = "redisdisk"
+        caching           = "ReadWrite"
+        storage_account_type = "Premium_LRS"
+    }
+
+    source_image_reference {
+        publisher = "Canonical"
+        offer     = "0001-com-ubuntu-server-focal"
+        sku       = "20_04-lts-gen2"
+        version   = "latest"
+    }
+
+    computer_name  = "redis"
+    admin_username = "azureuser"
+    disable_password_authentication = true
+    custom_data = base64encode(data.template_file.redisinit.rendered)
+
+    admin_ssh_key {
+        username       = "azureuser"
+        public_key     = tls_private_key.vm_ssh.public_key_openssh
+    }
 }

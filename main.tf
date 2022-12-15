@@ -1,4 +1,14 @@
-// Configure the AWS Cloud provider
-provider "aws" {
- shared_credentials_files = ["/Users/amansin3/.aws/credentials"]
+// Configure the Azure Cloud provider
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "=3.0.0"
+    }
+  }
+}
+
+# Configure the Microsoft Azure Provider
+provider "azurerm" {
+  features {}
 }
