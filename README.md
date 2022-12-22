@@ -1,9 +1,9 @@
-# AWS Infrastructure
+# Azure Infrastructure
 ![alt text](https://raw.githubusercontent.com/amansin0504/tfm-demo-app-azure-vm/main/images/architecture-diagram.png)
 
 # Deploy Architecture
 ## Prerequisites
-Make sure you have AWS credentials configured(aws cli configure) with privileges to provision the required AWS resources.
+Make sure you have Azure credentials configured with privileges to provision the required Azure resources(azure-infra.tf).
 
 ## Steps
 1.1 terraform plan > deploymentv1
