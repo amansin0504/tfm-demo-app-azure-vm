@@ -12,6 +12,6 @@ Make sure you have AWS credentials configured(aws cli configure) with privileges
 
 # Terraform Output
 ## Terraform Plan
-![alt text](https://raw.githubusercontent.com/amansin0504/aws-3tier-app-tfm/main/images/terraformplan.png)
+![alt text](https://raw.githubusercontent.com/amansin0504/tfm-demo-app-azure-vm/main/images/terraformplan.png)
 ## Terraform Deploy
-![alt text](https://raw.githubusercontent.com/amansin0504/aws-3tier-app-tfm/main/images/terraform.png)
+![alt text](https://raw.githubusercontent.com/amansin0504/tfm-demo-app-azure-vm/main/images/terraform.png)
