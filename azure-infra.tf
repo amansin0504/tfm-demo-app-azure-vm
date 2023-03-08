@@ -15,37 +15,37 @@ resource "azurerm_subnet" "websubnet1" {
     name                 = "websubnet1"
     resource_group_name  = azurerm_resource_group.microservicesdemorg.name
     virtual_network_name = azurerm_virtual_network.demovnet.name
-    address_prefixes       = ["10.0.1.0/24"]
+    address_prefixes       = ["10.0.111.0/24"]
 }
 resource "azurerm_subnet" "websubnet2" {
     name                 = "websubnet2"
     resource_group_name  = azurerm_resource_group.microservicesdemorg.name
     virtual_network_name = azurerm_virtual_network.demovnet.name
-    address_prefixes       = ["10.0.2.0/24"]
+    address_prefixes       = ["10.0.112.0/24"]
 }
 resource "azurerm_subnet" "appsubnet1" {
     name                 = "appsubnet1"
     resource_group_name  = azurerm_resource_group.microservicesdemorg.name
     virtual_network_name = azurerm_virtual_network.demovnet.name
-    address_prefixes       = ["10.0.3.0/24"]
+    address_prefixes       = ["10.0.113.0/24"]
 }
 resource "azurerm_subnet" "appsubnet2" {
     name                 = "appsubnet2"
     resource_group_name  = azurerm_resource_group.microservicesdemorg.name
     virtual_network_name = azurerm_virtual_network.demovnet.name
-    address_prefixes       = ["10.0.4.0/24"]
+    address_prefixes       = ["10.0.114.0/24"]
 }
 resource "azurerm_subnet" "dbsubnet1" {
     name                 = "dbsubnet1"
     resource_group_name  = azurerm_resource_group.microservicesdemorg.name
     virtual_network_name = azurerm_virtual_network.demovnet.name
-    address_prefixes       = ["10.0.5.0/24"]
+    address_prefixes       = ["10.0.115.0/24"]
 }
 resource "azurerm_subnet" "dbsubnet2" {
     name                 = "dbsubnet2"
     resource_group_name  = azurerm_resource_group.microservicesdemorg.name
     virtual_network_name = azurerm_virtual_network.demovnet.name
-    address_prefixes       = ["10.0.6.0/24"]
+    address_prefixes       = ["10.0.116.0/24"]
 }
 
 # Create an SSH key
@@ -103,7 +103,7 @@ resource "azurerm_storage_account" "amansin3cswflowstorage" {
   enable_https_traffic_only = true
 }
 
-# Configure nsg to user network watcher and store logs in storage account
+# Configure nsg to use network watcher and store logs in storage account
 resource "azurerm_network_watcher_flow_log" "cswnsgflowwatcher" {
   network_watcher_name = var.watchername.value
   resource_group_name  = var.watcherrg.value
@@ -137,7 +137,7 @@ resource "azurerm_network_interface" "frontendnic" {
         name                          = "myfrontendconfiguration"
         subnet_id                     = azurerm_subnet.websubnet1.id
         private_ip_address_allocation = "Static"
-        private_ip_address            = "10.0.1.10"
+        private_ip_address            = "10.0.111.10"
         public_ip_address_id          = azurerm_public_ip.frontendPublicIP.id
     }
 }
@@ -190,7 +190,7 @@ resource "azurerm_network_interface" "checkoutnic" {
         name                          = "checkoutconfiguration"
         subnet_id                     = azurerm_subnet.appsubnet1.id
         private_ip_address_allocation = "Static"
-        private_ip_address            = "10.0.3.10"
+        private_ip_address            = "10.0.113.10"
     }
 }
 resource "azurerm_network_interface_security_group_association" "checkoutnic" {
@@ -242,7 +242,7 @@ resource "azurerm_network_interface" "adnic" {
         name                          = "adconfiguration"
         subnet_id                     = azurerm_subnet.appsubnet1.id
         private_ip_address_allocation = "Static"
-        private_ip_address            = "10.0.3.11"
+        private_ip_address            = "10.0.113.11"
     }
 }
 resource "azurerm_network_interface_security_group_association" "adnic" {
@@ -294,7 +294,7 @@ resource "azurerm_network_interface" "recommendationnic" {
         name                          = "recommendationconfiguration"
         subnet_id                     = azurerm_subnet.appsubnet1.id
         private_ip_address_allocation = "Static"
-        private_ip_address            = "10.0.3.12"
+        private_ip_address            = "10.0.113.12"
     }
 }
 resource "azurerm_network_interface_security_group_association" "recommendationnic" {
@@ -346,7 +346,7 @@ resource "azurerm_network_interface" "paymentnic" {
         name                          = "paymentconfiguration"
         subnet_id                     = azurerm_subnet.appsubnet1.id
         private_ip_address_allocation = "Static"
-        private_ip_address            = "10.0.3.13"
+        private_ip_address            = "10.0.113.13"
     }
 }
 resource "azurerm_network_interface_security_group_association" "paymentnic" {
@@ -398,7 +398,7 @@ resource "azurerm_network_interface" "emailnic" {
         name                          = "emailconfiguration"
         subnet_id                     = azurerm_subnet.appsubnet1.id
         private_ip_address_allocation = "Static"
-        private_ip_address            = "10.0.3.14"
+        private_ip_address            = "10.0.113.14"
     }
 }
 resource "azurerm_network_interface_security_group_association" "emailnic" {
@@ -450,7 +450,7 @@ resource "azurerm_network_interface" "productcatalognic" {
         name                          = "productcatalogconfiguration"
         subnet_id                     = azurerm_subnet.appsubnet1.id
         private_ip_address_allocation = "Static"
-        private_ip_address            = "10.0.3.15"
+        private_ip_address            = "10.0.113.15"
     }
 }
 resource "azurerm_network_interface_security_group_association" "productcatalognic" {
@@ -502,7 +502,7 @@ resource "azurerm_network_interface" "shippingnic" {
         name                          = "shippingconfiguration"
         subnet_id                     = azurerm_subnet.appsubnet1.id
         private_ip_address_allocation = "Static"
-        private_ip_address            = "10.0.3.16"
+        private_ip_address            = "10.0.113.16"
     }
 }
 resource "azurerm_network_interface_security_group_association" "shippingnic" {
@@ -554,7 +554,7 @@ resource "azurerm_network_interface" "currencynic" {
         name                          = "currencyconfiguration"
         subnet_id                     = azurerm_subnet.appsubnet1.id
         private_ip_address_allocation = "Static"
-        private_ip_address            = "10.0.3.17"
+        private_ip_address            = "10.0.113.17"
     }
 }
 resource "azurerm_network_interface_security_group_association" "currencynic" {
@@ -606,7 +606,7 @@ resource "azurerm_network_interface" "cartnic" {
         name                          = "cartconfiguration"
         subnet_id                     = azurerm_subnet.appsubnet1.id
         private_ip_address_allocation = "Static"
-        private_ip_address            = "10.0.3.18"
+        private_ip_address            = "10.0.113.18"
     }
 }
 resource "azurerm_network_interface_security_group_association" "cartnic" {
@@ -658,7 +658,7 @@ resource "azurerm_network_interface" "redisnic" {
         name                          = "redisconfiguration"
         subnet_id                     = azurerm_subnet.dbsubnet1.id
         private_ip_address_allocation = "Static"
-        private_ip_address            = "10.0.5.10"
+        private_ip_address            = "10.0.115.10"
     }
 }
 resource "azurerm_network_interface_security_group_association" "redisnic" {

@@ -1,5 +1,5 @@
 output "access-frontend-at" {
-    value = join(":",list(azurerm_linux_virtual_machine.frontend.public_ip_address,"8080"))
+    value = join(":",tolist([azurerm_linux_virtual_machine.frontend.public_ip_address,"8080"]))
     description = "The instance name for the fronend instance"
 }
 output "frontend" {

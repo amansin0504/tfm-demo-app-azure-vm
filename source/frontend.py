@@ -11,43 +11,43 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 @app.route('/')
 def main():
     displaytext= ""
-    response = requests.get("http://10.0.3.10:8989/checkout")
+    response = requests.get("http://10.0.113.10:8989/checkout")
     if response.status_code == 200:
         checkoutresponse= response.text
     else:
         checkoutresponse= "[{Error:'Checkout endpoint is not responding!!'}]"
 
-    response = requests.get("http://10.0.3.11:8990/ad")
+    response = requests.get("http://10.0.113.11:8990/ad")
     if response.status_code == 200:
         adresponse= response.text
     else:
         adresponse== "[{Error:'ad endpoint is not responding!!'}]"
 
-    response = requests.get("http://10.0.3.12:8991/recommend")
+    response = requests.get("http://10.0.113.12:8991/recommend")
     if response.status_code == 200:
         recommendresponse= response.text
     else:
         recommendresponse = "[{Error:'Recommend endpoint is not responding!!'}]"
 
-    response = requests.get("http://10.0.3.15:8994/productcatalog")
+    response = requests.get("http://10.0.113.15:8994/productcatalog")
     if response.status_code == 200:
         productcatalogresponse= response.text
     else:
         productcatalogresponse= "[{Error: 'Productcatalog endpoint is not responding!!'}]"
 
-    response = requests.get("http://10.0.3.16:8995/shipping")
+    response = requests.get("http://10.0.113.16:8995/shipping")
     if response.status_code == 200:
         shippingresponse= response.text
     else:
         shippingresponse= "[{Error: 'shipping endpoint is not responding!!'}]"
 
-    response = requests.get("http://10.0.3.17:8996/currency")
+    response = requests.get("http://10.0.113.17:8996/currency")
     if response.status_code == 200:
         currencyresponse= response.text
     else:
         currencyresponse= "[{Error: 'Currency endpoint is not responding!!'}]"
 
-    response = requests.get("http://10.0.3.18:8997/carts")
+    response = requests.get("http://10.0.113.18:8997/carts")
     if response.status_code == 200:
         cartsresponse= response.text
     else:
